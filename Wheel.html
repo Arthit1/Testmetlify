@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spin the Wheel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f2f2f2;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .wheel-container {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            position: relative;
+            width: 100%;
+            margin-right: 50px;
+        }
+
+        .wheel {
+            position: relative;
+            margin-top: 50px;
+            width: 70vmin;
+            height: 70vmin;
+            border-radius: 50%;
+            background: conic-gradient(
+                red 0deg 60deg, 
+                yellow 60deg 120deg, 
+                green 120deg 180deg, 
+                blue 180deg 240deg, 
+                purple 240deg 300deg, 
+                pink 300deg 360deg
+            );
+            transition: transform 4s ease-out;
+            transform-origin: center;
+        }
+
+        .button-container {
+            position: absolute;
+            bottom: 50px;
+            text-align: center;
+        }
+
+        .button {
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        #winner {
+            margin-top: 20px;
+            margin-left: 50px;
+            font-size: 56px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        #stock {
+            margin-top: 10px;
+            margin-left: 50px;
+            font-size: 18px;
+            color: #333;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+
+        .left-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            margin-left: 100px;
+            margin-bottom: 200px;
+            position: absolute;
+            left: 0;
+        }
+
+        /* Celebration animation styling */
+        .celebration {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10;
+            pointer-events: none;
+            display: none;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: rgba(255, 0, 0, 0.8);
+            opacity: 0;
+            animation: confetti-animation 3s forwards;
+        }
+
+        @keyframes confetti-animation {
+            0% {
+                opacity: 1;
+                transform: translateY(0) rotate(0deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(500px) rotate(720deg);
+            }
+        }
+
+        /* Styling for the export button */
+        .export-button {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wheel-container">
+        <div class="left-container">
+            <div id="winner">ของรางวัลคือ!!: </div>
+            <div id="stock">รายการของรางวัล:<br></div>
+        </div>
+
+        <div class="wheel" id="wheel"></div>
+    </div>
+
+    <div class="button-container">
+        <button class="button" id="spinBtn">Spin the Wheel!</button>
+    </div>
+
+    <!-- Export button at the bottom-right -->
+    <button class="export-button" id="exportBtn">Export Stock</button>
+
+    <!-- Celebration container -->
+    <div class="celebration" id="celebration"></div>
+
+    <script>
+        const names = [
+            "ทิชชู่แห้ง", "ทิชชู่เปียก", "มาม่า", "จายา", "กระเป๋าเดินทาง(ใหญ่)", 
+            "กระเป๋าเดินทาง(เล็ก)", "ผ้าห่มคอตตอนลายพาวเวอร์พัฟเกิร์ล", 
+            "ผ้าห่มคอตตอนลายหมูเด้ง", "เตาอบไฟฟ้า", "หม้อหุงข้าว ขนาด 1 ลิตร", 
+            "ถุงใส่รองเท้าสีเทา", "ถุงใส่รองเท้าสีดำ", "พาวเวอร์แบงค์ Eloop สีดำ", 
+            "พาวเวอร์แบงค์ Eloop สีขาว", "กล่องใส่ข้าว กล่องถนอมอาหาร", "เลย์", 
+            "กล่องใส่รองเท้าสีขาว", "ช้อนส้อม เกาหลี สีเงิน", "ช้อนส้อม เกาหลี สีทอง"
+        ];
+
+        const prizeStock = {
+            "ทิชชู่แห้ง": 30,
+            "ทิชชู่เปียก": 40,
+            "มาม่า": 90,
+            "จายา": 30,
+            "กระเป๋าเดินทาง(ใหญ่)": 1,
+            "กระเป๋าเดินทาง(เล็ก)": 1,
+            "ผ้าห่มคอตตอนลายพาวเวอร์พัฟเกิร์ล": 1,
+            "ผ้าห่มคอตตอนลายหมูเด้ง": 1,
+            "เตาอบไฟฟ้า": 1,
+            "หม้อหุงข้าว ขนาด 1 ลิตร": 1,
+            "ถุงใส่รองเท้าสีเทา": 10,
+            "ถุงใส่รองเท้าสีดำ": 10,
+            "พาวเวอร์แบงค์ Eloop สีดำ": 1,
+            "พาวเวอร์แบงค์ Eloop สีขาว": 1,
+            "กล่องใส่ข้าว กล่องถนอมอาหาร": 20,
+            "เลย์": 30,
+            "กล่องใส่รองเท้าสีขาว": 10,
+            "ช้อนส้อม เกาหลี สีเงิน": 12,
+            "ช้อนส้อม เกาหลี สีทอง": 10
+        };
+
+        const prizeNames = Object.keys(prizeStock);
+
+        let winnerName = "";
+        let selectedPrize = "";
+
+        const stockDisplay = document.getElementById('stock');
+        let stockText = "รายการของรางวัล:<br>";
+        prizeNames.forEach(prize => {
+            stockText += `${prize} <br>`;
+        });
+        stockDisplay.innerHTML = stockText;
+
+        // Weighted random selection (favoring limited-stock prizes)
+        function getWeightedPrize() {
+            const weightedPrizes = [];
+            const desiredChance = 3846; // This means 1 in 3846 chance (~0.026%)
+
+            // Loop through each prize and adjust its weighting based on stock
+            for (let prize in prizeStock) {
+                const stock = prizeStock[prize];
+
+                // Premium prizes (very low stock) have a chance of 0.026% to be selected
+                // Adjust the weight based on desired chances
+                // For example, if the stock is very low (e.g., 1), use the desired chance to make it rare
+                if (stock <= 5) {
+                    // Add the prize to the list 1 time for every desiredChance (3846) selections
+                    // This gives the prize 0.026% chance
+                    for (let i = 0; i < desiredChance; i++) {
+                        weightedPrizes.push(prize);
+                    }
+                } else {
+                    // For prizes with higher stock, add them once
+                    weightedPrizes.push(prize);
+                }
+            }
+
+            // Randomly select a prize from the weighted list
+            const randomIndex = Math.floor(Math.random() * weightedPrizes.length);
+            return weightedPrizes[randomIndex];
+        }
+
+        // Event listener for the spin button
+        document.getElementById('spinBtn').addEventListener('click', function() {
+            const wheel = document.getElementById('wheel');
+            const winnerDisplay = document.getElementById('winner');
+            const celebration = document.getElementById('celebration');
+
+            // Randomly pick a prize using the weighted mechanism
+            selectedPrize = getWeightedPrize();
+
+            // Update stock and prize text
+            prizeStock[selectedPrize] -= 1;
+
+            // Randomly select a winner
+            winnerName = names[Math.floor(Math.random() * names.length)];
+
+            // Rotate wheel and show the winner
+            const duration = 6;
+            const fps = 60;
+            const totalRotation = Math.floor(Math.random() * 360) + 3600;
+            const totalFrames = duration * fps;
+
+            let currentFrame = 0;
+            let currentRotation = 0;
+            let rotationStep = totalRotation / totalFrames;
+
+            wheel.style.transition = 'none';
+
+            function animateWheel() {
+                if (currentFrame < totalFrames) {
+                    let easeValue = easeOut(currentFrame / totalFrames);
+                    let easedRotation = totalRotation * easeValue;
+                    wheel.style.transform = `rotate(${easedRotation}deg)`;
+                    currentFrame++;
+                    requestAnimationFrame(animateWheel);
+                } else {
+                    wheel.style.transition = 'transform 4s ease-out';
+
+                    setTimeout(function() {
+                        winnerDisplay.textContent = `ของรางวัลคือ!!: ${winnerName}`;
+
+                        // Show celebration
+                        celebration.style.display = 'block';
+                        generateConfetti();
+                    },); // Delay winner display for 1 second after spin stops
+                }
+            }
+
+            animateWheel();
+        });
+
+        // Function for easing out rotation
+        function easeOut(t) {
+            return t * (2 - t);
+        }
+
+        // Generate confetti animation
+        function generateConfetti() {
+            const celebration = document.getElementById('celebration');
+            const confettiCount = 100;
+            for (let i = 0; i < confettiCount; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                confetti.style.left = `${Math.random() * 100}%`;
+                confetti.style.animationDelay = `${Math.random() * 1}s`;
+                celebration.appendChild(confetti);
+            }
+        }
+        function exportStockToTXT() {
+            let txtContent = "Prize Stock:\n\n"; // Set up text content header
+
+            // Loop through prizeStock and add each prize with its remaining stock
+            for (let prize in prizeStock) {
+                txtContent += `${prize}: ${prizeStock[prize]}\n`;
+            }
+
+            // Create a link and download the text file
+            const blob = new Blob([txtContent], { type: 'text/plain' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "prize_stock.txt";
+            document.body.appendChild(link); // Required for Firefox
+            link.click();
+            document.body.removeChild(link); // Clean up after download
+        }
+
+        // Add event listener to the export button
+        document.getElementById('exportBtn').addEventListener('click', exportStockToTXT);
+
+    </script>
+
+</body>
+</html>
